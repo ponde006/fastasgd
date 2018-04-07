@@ -109,11 +109,7 @@ function lnext(l̄::Array{Int,1}, r̄::Array{Int,1})
     r̄[t+1] = l̄[t+1] + 1
     return nothing
 end
-#------------------------------------------------------------------------------#
-# Bijection
-#------------------------------------------------------------------------------#
-# Curtis-Clenshaw type bijection. Takes level and index of a point and returns
-# the points position in the 1D coefficients array
+
 #------------------------------------------------------------------------------#
 # Bijection
 #------------------------------------------------------------------------------#
