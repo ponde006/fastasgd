@@ -46,6 +46,7 @@ type ASG
     lb::Array{Float64, 1}
     ub::Array{Float64, 1}
     wrk::Array{Int64, 1}
+    coord::Array{Float64, 1}
 
     function ASG( d::Int64, ds::Int64, l::Int64, lb, ub )
 
@@ -56,7 +57,7 @@ type ASG
         numOfGridPoints = gsize(d, l)
         sg1d = zeros(Float64, ds, numOfGridPoints)
         wrk = zeros(Int, d)
-        return new(d, ds, l, sg1d, numOfGridPoints, lb, ub, wrk)
+        return new(d, ds, l, sg1d, numOfGridPoints, lb, ub, wrk, zeros(Float64, d))
     end
 end
 
@@ -437,7 +438,6 @@ function interpolate( coord::Array{Float64, 1},  a::ASG, depth::Int64, state::In
     for i = 1:d
         coord[i] = (coord[i] - a.lb[i])/(a.ub[i] - a.lb[i])
     end
-    sg1d = view(a.sg1d, state,:)
     wrk = a.wrk
     res = 0.0
     index2 = 0
@@ -470,7 +470,7 @@ function interpolate( coord::Array{Float64, 1},  a::ASG, depth::Int64, state::In
                 lsum *= (wrk[j] > 1 ? 2^(wrk[j]-1) : 2^wrk[j])
             end
 
-            res += prod * sg1d[index1 + index2 + 1]
+            res += prod * a.sg1d[state, index1 + index2 + 1]
             index2 += lsum
             wrk[end] == ord && break
             lnext( wrk )
@@ -741,7 +741,7 @@ function adaptivegrid( a::ASG, f::Function, lϵ::Float64, sϵ::Float64, state::I
                 t2 = cc_gp2idx(lwrk, indices, wrk, d)
 
                 #lprev(levels)
-                nerr = sum(abs(a.sg1d[idx+1:t2]) )
+                nerr = sum(abs(a.sg1d[state, idx+1:t2]) )
                 push!(err,  nerr)
                 r += nerr
             end
@@ -761,11 +761,10 @@ function(asg::ASG)(x::Array{Float64,1}, state::Int64)
 end
 
 function(asg::ASG)(x::Vararg{Union{Float64, Int64}})
-    pt = zeros(Float64, asg.d)
     for i = 1:asg.d
-        pt[i] = x[i]::Float64
+        asg.coord[i] = x[i]::Float64
     end
-    return interpolate( pt , asg, asg.l, x[end]::Int64 )
+    return interpolate( asg.coord , asg, asg.l, x[end]::Int64 )
 end
 
 # Wrapper for derivative interpolation
@@ -775,11 +774,10 @@ end
 
 # Wrapper for arbitrary derivative interpolation
 function(asg::ASG)(j::Int64, x::Vararg{Union{Float64, Int64}})
-    pt = zeros(Float64, asg.d)
     for i = 1:asg.d
-        pt[i] = x[i]::Float64
+        asg.coord[i] = x[i]::Float64
     end
-    return dinterpolate( pt , asg, asg.l, x[end]::Int64, j )
+    return dinterpolate( asg.coord , asg, asg.l, x[end]::Int64, j )
 end
 
 
